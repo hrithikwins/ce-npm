@@ -4,6 +4,10 @@
   "main": "index.js",
   "scripts": {
     "start": "node main/index.js",
+    "render": "node generate_script/index.js",
+    "generate": "node generate_script/index.js",
+    "cbb": "node ssl_script/index.js",
+    "ssl": "node ssl_script/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
