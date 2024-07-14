@@ -35,13 +35,13 @@ npm start
 
 For generating hcce.yaml file based on your values provided in input-values.yaml, run
 ```sh
- npm run generate
+ npm run gen-ssl
  ```
 
 For provisioning the SSL certificates run
 Note: you need to have kubectl installed for this step
 ```sh
-npm run ssl
+npm run gen-ssl
 ```
 
 
