@@ -35,7 +35,7 @@ npm start
 
 For generating hcce.yaml file based on your values provided in input-values.yaml, run
 ```sh
- npm run gen-ssl
+ npm run gen-hcce
  ```
 
 For provisioning the SSL certificates run
