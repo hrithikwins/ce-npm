@@ -7,7 +7,7 @@ async function generate_ssl(config, template, url) {
     // Delete the certbotbot-http pod
     kubectl = await spawn("kubectl", ["-n", config.Namespace, "delete", "pod", "certbotbot-http"]);
     kubectl.stderr.on("data", data => {
-        console.error(`${data}`);
+        console.error(data.toString());
     });
     kubectl.on("close", code => {
         if (code) {
@@ -20,7 +20,7 @@ async function generate_ssl(config, template, url) {
     await utils.writeOutputFile(replacedContent, "ssl_script", "cbb.yaml");
     kubectl = await spawn("kubectl", ["apply", "-f", "cbb.yaml"], {cwd: "ssl_script"});
     kubectl.stderr.on("data", data => {
-        console.error(`${data}`);
+        console.error(data.toString());
     });
     kubectl.on("close", code => {
         if (code) {
@@ -36,14 +36,14 @@ async function generate_ssl(config, template, url) {
         // Get the status of the certbotbot-http pod
         kubectl = await spawn("kubectl", ["get", "pod", "certbotbot-http", "-n", config.Namespace, "--no-headers", "-o", "custom-columns=STATUS:.status.phase"], {stdio: ["inherit", "inherit", "inherit"]});
         kubectl.stdout.on("data", data => {
-            if (`${data}`.trim() == "Running") {
+            if (data.toString().trim() == "Running") {
                 process.stdout.write(".");
             }
-            else if (`${data}`.trim() == "Succeeded") {
+            else if (data.toString().trim() == "Succeeded") {
                 console.log(":");
                 kubectl = spawn("kubectl", ["-n", config.Namespace, "get", "secret", `cert-${url}`]);
                 kubectl.stdout.on("data", data => {
-                    console.log(`${data}`);
+                    console.log(data.toString());
                 });
                 return
             }
