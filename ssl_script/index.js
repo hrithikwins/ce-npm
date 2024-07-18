@@ -5,7 +5,7 @@ const utils = require("../utils");
 async function generate_ssl(config, template, url) {
     console.log(`Generating SSL certificate for: ${url}`);
     // Delete the certbotbot-http pod
-    kubectl = await spawn("kubectl", ["-n", config.Namespace, "delete", "pod", "'certbotbot-http'"]);
+    kubectl = await spawn("kubectl", ["-n", config.Namespace, "delete", "pod", "certbotbot-http"]);
     kubectl.stderr.on("data", data => {
         console.error(`${data}`);
     });
@@ -34,12 +34,12 @@ async function generate_ssl(config, template, url) {
         await new Promise(resolve => setTimeout(resolve, 10000));
         //await sleep(10000);
         // Get the status of the certbotbot-http pod
-        kubectl = spawn("kubectl", ["get", "pod", "'certbotbot-http'", "-n", config.Namespace, "--no-headers", "-o", "custom-columns=STATUS:.status.phase"]);
+        kubectl = await spawn("kubectl", ["get", "pod", "certbotbot-http", "-n", config.Namespace, "--no-headers", "-o", "custom-columns=STATUS:.status.phase"], {stdio: ["inherit", "inherit", "inherit"]});
         kubectl.stdout.on("data", data => {
-            if (`${data}` == "Running") {
+            if (`${data}`.trim() == "Running") {
                 process.stdout.write(".");
             }
-            else if (`${data}` == "Succeeded") {
+            else if (`${data}`.trim() == "Succeeded") {
                 console.log(":");
                 kubectl = spawn("kubectl", ["-n", config.Namespace, "get", "secret", `cert-${url}`]);
                 kubectl.stdout.on("data", data => {
