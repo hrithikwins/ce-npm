@@ -40,7 +40,9 @@ module.exports = {
   },
 
   // Function to replace placeholders in template with config values
-    replacePlaceholders: function replacePlaceholders(template, config) {
-        return template.replace(/\$(\w+)/g, (match, p1) => config[p1] || match);
+  replacePlaceholders: function replacePlaceholders(template, config) {
+    return template.replace(/\$(\w+)/g, (match, p1) => {
+      return config[p1] !== undefined ? config[p1] : match;
+    });
   }
 }
