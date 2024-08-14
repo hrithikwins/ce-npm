@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const forge = require("node-forge");
 const path = require("path");
-const yaml = require("js-yaml");
+const YAML = require("yaml");
 const pemJwk = require("pem-jwk");
 const utils = require("../utils");
 
@@ -60,13 +60,48 @@ function convertPemToJwk(publicKey) {
   return JSON.stringify(jwk);
 }
 
+function generatePersistentVolumes(processedConfig, replacedContent) {
+  if (processedConfig.KUBERNETES_PROVIDER === "DO") {
+    processedConfig.ACCESS_MODE = "ReadWriteMany";
+  }
+  else if (processedConfig.KUBERNETES_PROVIDER === "OTHER") {
+    processedConfig.ACCESS_MODE = "ReadWriteOnce";
+  }
+  else {
+    console.error("ERROR: Unrecognized Kubernetes Provider");
+    process.exit(1);
+  }
+
+  var yamlDocuments = YAML.parseAllDocuments(replacedContent);
+  const persistent_volumes_template = utils.readTemplate("/generate_script", "persistent_volumes.yam");
+  const replacedPersistentVolumesContent = utils.replacePlaceholders(persistent_volumes_template, processedConfig);
+  YAML.parseAllDocuments(replacedPersistentVolumesContent).forEach((doc, index) => {
+    yamlDocuments.splice(2 + index, 0, doc);
+  });
+
+  yamlDocuments.forEach((doc, index) => {
+    const jsDoc = doc.toJS();
+    if (jsDoc.kind === "Deployment" && jsDoc.metadata.name === "pgsql") {
+
+      jsDoc.spec.template.spec.volumes[0] = {"name": "postgresql-data", "persistentVolumeClaim": {"claimName": "pgsql-pvc"}};
+      yamlDocuments[index] = new YAML.Document(jsDoc);
+    }
+    if (jsDoc.kind === "Deployment" && jsDoc.metadata.name === "reticulum") {
+      jsDoc.spec.template.spec.volumes[0] = {"name": "storage", "persistentVolumeClaim": {"claimName": "ret-pvc"}};
+      yamlDocuments[index] = new YAML.Document(jsDoc);
+    }
+  });
+
+  return `${yamlDocuments.map(doc => YAML.stringify(doc, {"lineWidth": 0, "directives": false})).join('---\n')}`;
+}
+
 // Main function to handle the script
 function main() {
   try {
     const config = utils.readConfig();
-    const processedConfig = yaml.load(
-      utils.replacePlaceholders(yaml.dump(config), config)
-    );
+    const processedConfig = YAML.parse(
+        utils.replacePlaceholders(YAML.stringify(config), config)
+      );
 
     // Generate keys and certificate
     const { privateKey, publicKey } = generateKeys();
@@ -78,9 +113,13 @@ function main() {
     processedConfig.initKey = Buffer.from(pemPrivateKey).toString('base64').replace(/\n/g, "");
 
     const template = utils.readTemplate("/generate_script", "hcce.yam");
-    const replacedContent = utils.replacePlaceholders(template, processedConfig);
+    var replacedContent = utils.replacePlaceholders(template, processedConfig);
+
+    if (processedConfig.GENERATE_PERSISTENT_VOLUMES) {
+      replacedContent = generatePersistentVolumes(processedConfig, replacedContent);
+    }
+
     utils.writeOutputFile(replacedContent, "", "hcce.yaml");
-    console.log("Environment variables set and keys generated successfully.");
   } catch (error) {
     console.error("Error in main function:", error);
   }
