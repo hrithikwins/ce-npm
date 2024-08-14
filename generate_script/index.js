@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const fs = require("fs").promises;
+const fs = require("fs");
 const forge = require("node-forge");
 const path = require("path");
 const yaml = require("js-yaml");
@@ -76,39 +76,39 @@ function generateCertificate(keys) {
 }
 
 // Function to convert PEM to JWK
-async function convertPemToJwk(publicKey) {
+function convertPemToJwk(publicKey) {
   const jwk = pemJwk.pem2jwk(publicKey);
   return JSON.stringify(jwk);
 }
 
 // Main function to handle the script
-async function main() {
+function main() {
   try {
     // Generate keys and certificate
     const keys = generateKeys();
     const { pemCert, privateKey, publicKey } = generateCertificate(keys);
 
     // Save keys and certificate
-    await fs.mkdir("keys", { recursive: true });
+    fs.mkdirSync("keys", { recursive: true });
 
-    await fs.writeFile("keys/privateKey.pem", privateKey);
-    await fs.writeFile("keys/publicKey.pem", publicKey);
-    await fs.writeFile("keys/certificate.crt", pemCert);
+    fs.writeFileSync("keys/privateKey.pem", privateKey);
+    fs.writeFileSync("keys/publicKey.pem", publicKey);
+    fs.writeFileSync("keys/certificate.crt", pemCert);
 
     console.log("Keys and certificate generated and saved.");
-    const jwk = await convertPemToJwk(publicKey);
+    const jwk = convertPemToJwk(publicKey);
     process.env.PGRST_JWT_SECRET = jwk;
 
     process.env.initCert = pemCert;
     process.env.initKey = privateKey;
 
-    const config = await utils.readConfig();
+    const config = utils.readConfig();
     config.PGRST_JWT_SECRET = process.env.PGRST_JWT_SECRET;
     config.PERMS_KEY = privateKey.replace(/\n/g, "\\\\n");
 
-    const template = await utils.readTemplate("/generate_script", "hcce.yam");
+    const template = utils.readTemplate("/generate_script", "hcce.yam");
     const replacedContent = utils.replacePlaceholders(template, config);
-    await utils.writeOutputFile(replacedContent, "", "hcce.yaml");
+    utils.writeOutputFile(replacedContent, "", "hcce.yaml");
     console.log("Environment variables set and keys generated successfully.");
   } catch (error) {
     console.error("Error in main function:", error);
