@@ -1,6 +1,3 @@
 /node_modules
-/keys/certificate.crt
-/keys/privateKey.pem
-/keys/publicKey.pem
 /hcce.yaml
 /ssl_script/cbb.yaml

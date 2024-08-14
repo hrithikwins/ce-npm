@@ -1,5 +1,4 @@
 const crypto = require("crypto");
-const fs = require("fs").promises;
 const forge = require("node-forge");
 const path = require("path");
 const yaml = require("js-yaml");
@@ -24,12 +23,11 @@ function generateKeys() {
 }
 
 // Generate a self-signed certificate
-function generateCertificate(keys) {
-  const { privateKey, publicKey } = keys;
-
+function generateCertificate(hub_domain) {
   // Create a new certificate
+  const { publicKey, privateKey } = forge.pki.rsa.generateKeyPair(2048);
   const cert = forge.pki.createCertificate();
-  cert.publicKey = forge.pki.publicKeyFromPem(publicKey);
+  cert.publicKey = publicKey;
 
   // Set certificate attributes
   cert.serialNumber = "01";
@@ -40,75 +38,48 @@ function generateCertificate(keys) {
   const attrs = [
     {
       name: "commonName",
-      value: "example.org",
-    },
-    {
-      name: "countryName",
-      value: "US",
-    },
-    {
-      shortName: "ST",
-      value: "California",
-    },
-    {
-      name: "localityName",
-      value: "San Francisco",
-    },
-    {
-      name: "organizationName",
-      value: "Example Organization",
-    },
-    {
-      shortName: "OU",
-      value: "Test",
-    },
+      value: hub_domain,
+    }
   ];
   cert.setSubject(attrs);
   cert.setIssuer(attrs);
 
   // Sign the certificate with its own private key
-  cert.sign(forge.pki.privateKeyFromPem(privateKey), forge.md.sha256.create());
+  cert.sign(privateKey, forge.md.sha256.create());
 
-  // Convert the certificate to PEM format
+  // Convert the certificate and private key to PEM format
   const pemCert = forge.pki.certificateToPem(cert);
+  const pemPrivateKey = forge.pki.privateKeyToPem(privateKey);
 
-  return { pemCert, privateKey, publicKey };
+  return { pemCert, pemPrivateKey };
 }
 
 // Function to convert PEM to JWK
-async function convertPemToJwk(publicKey) {
+function convertPemToJwk(publicKey) {
   const jwk = pemJwk.pem2jwk(publicKey);
   return JSON.stringify(jwk);
 }
 
 // Main function to handle the script
-async function main() {
+function main() {
   try {
+    const config = utils.readConfig();
+    const processedConfig = yaml.load(
+      utils.replacePlaceholders(yaml.dump(config), config)
+    );
+
     // Generate keys and certificate
-    const keys = generateKeys();
-    const { pemCert, privateKey, publicKey } = generateCertificate(keys);
+    const { privateKey, publicKey } = generateKeys();
+    const { pemCert, pemPrivateKey } = generateCertificate(config.HUB_DOMAIN);
 
-    // Save keys and certificate
-    await fs.mkdir("keys", { recursive: true });
+    processedConfig.PGRST_JWT_SECRET = convertPemToJwk(publicKey);
+    processedConfig.PERMS_KEY = privateKey.replace(/\n/g, "\\\\n");
+    processedConfig.initCert = Buffer.from(pemCert).toString('base64').replace(/\n/g, "");
+    processedConfig.initKey = Buffer.from(pemPrivateKey).toString('base64').replace(/\n/g, "");
 
-    await fs.writeFile("keys/privateKey.pem", privateKey);
-    await fs.writeFile("keys/publicKey.pem", publicKey);
-    await fs.writeFile("keys/certificate.crt", pemCert);
-
-    console.log("Keys and certificate generated and saved.");
-    const jwk = await convertPemToJwk(publicKey);
-    process.env.PGRST_JWT_SECRET = jwk;
-
-    process.env.initCert = pemCert;
-    process.env.initKey = privateKey;
-
-    const config = await utils.readConfig();
-    config.PGRST_JWT_SECRET = process.env.PGRST_JWT_SECRET;
-    config.PERMS_KEY = privateKey.replace(/\n/g, "\\\\n");
-
-    const template = await utils.readTemplate("/generate_script", "hcce.yam");
-    const replacedContent = utils.replacePlaceholders(template, config);
-    await utils.writeOutputFile(replacedContent, "", "hcce.yaml");
+    const template = utils.readTemplate("/generate_script", "hcce.yam");
+    const replacedContent = utils.replacePlaceholders(template, processedConfig);
+    utils.writeOutputFile(replacedContent, "", "hcce.yaml");
     console.log("Environment variables set and keys generated successfully.");
   } catch (error) {
     console.error("Error in main function:", error);
