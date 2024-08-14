@@ -28,11 +28,6 @@ Put all your config inside of input-values.yaml file
 
 ## Running the Script
 
-To execute the script with a chooser, use the following command:
-```sh
-npm start
-```
-
 For generating hcce.yaml file based on your values provided in input-values.yaml, run
 ```sh
  npm run gen-hcce
