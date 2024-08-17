@@ -91,7 +91,8 @@ function main() {
   try {
     const config = utils.readConfig();
     const processedConfig = YAML.parse(
-        utils.replacePlaceholders(YAML.stringify(config), config)
+        utils.replacePlaceholders(YAML.stringify(config), config),
+        {"schema": "yaml-1.1"}
       );
 
     // Generate keys and certificate
