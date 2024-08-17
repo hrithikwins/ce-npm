@@ -18,7 +18,7 @@ spec:
     name: pgsql-pvc
     namespace: $Namespace
   hostPath:
-    path: "/tmp/pgsql_data"
+    path: "/mnt/pgsql_data"
     type: DirectoryOrCreate
 ---
 apiVersion: v1
@@ -38,7 +38,7 @@ spec:
     name: ret-pvc
     namespace: $Namespace
   hostPath:
-    path: "/tmp/ret_storage_data"
+    path: "/mnt/ret_storage_data"
     type: DirectoryOrCreate
 ---
 ######################################################################################
