@@ -12,7 +12,7 @@ spec:
   capacity:
     storage:  $PERSISTENT_VOLUME_SIZE
   accessModes:
-    - $ACCESS_MODE
+    - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   claimRef:
     name: pgsql-pvc
@@ -32,7 +32,7 @@ spec:
   capacity:
     storage:  $PERSISTENT_VOLUME_SIZE
   accessModes:
-    - $ACCESS_MODE
+    - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   claimRef:
     name: ret-pvc
@@ -52,7 +52,7 @@ metadata:
 spec:
   storageClassName: manual
   accessModes:
-    - $ACCESS_MODE
+    - ReadWriteOnce
   resources:
     requests:
       storage: $PERSISTENT_VOLUME_SIZE
@@ -65,7 +65,7 @@ metadata:
 spec:
   storageClassName: manual
   accessModes:
-    - $ACCESS_MODE
+    - ReadWriteOnce
   resources:
     requests:
       storage: $PERSISTENT_VOLUME_SIZE

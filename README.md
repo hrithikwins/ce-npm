@@ -26,13 +26,8 @@ This is a simple Node.js script that helps you to generate your hcce.yaml file a
 ## Config
 Put all your config inside of input-values.yaml file
 
-10Gi is 10 Gibibytes
-
-Valid options for KUBERNETES_PROVIDER are:
-"DO" (DigitalOcean)
-"OTHER" (all other kubernetes providers)
-
-PERSISTENT_VOLUME_SIZE and KUBERNETES_PROVIDER are only used when GENERATE_PERSISTENT_VOLUMES is set to true.
+PERSISTENT_VOLUME_SIZE is only used when GENERATE_PERSISTENT_VOLUMES is set to true.
+10Gi is 10 Gibibytes.
 
 ## Running the Script
 

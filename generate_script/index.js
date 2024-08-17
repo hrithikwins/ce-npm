@@ -61,28 +61,19 @@ function convertPemToJwk(publicKey) {
 }
 
 function generatePersistentVolumes(processedConfig, replacedContent) {
-  if (processedConfig.KUBERNETES_PROVIDER === "DO") {
-    processedConfig.ACCESS_MODE = "ReadWriteMany";
-  }
-  else if (processedConfig.KUBERNETES_PROVIDER === "OTHER") {
-    processedConfig.ACCESS_MODE = "ReadWriteOnce";
-  }
-  else {
-    console.error("ERROR: Unrecognized Kubernetes Provider");
-    process.exit(1);
-  }
-
-  var yamlDocuments = YAML.parseAllDocuments(replacedContent);
+  const yamlDocuments = YAML.parseAllDocuments(replacedContent);
   const persistent_volumes_template = utils.readTemplate("/generate_script", "persistent_volumes.yam");
   const replacedPersistentVolumesContent = utils.replacePlaceholders(persistent_volumes_template, processedConfig);
+
+  // Add in the persistent volume configs to the hcce.yaml file
   YAML.parseAllDocuments(replacedPersistentVolumesContent).forEach((doc, index) => {
     yamlDocuments.splice(2 + index, 0, doc);
   });
 
+  // update the volume specifications for pgsql and reticulum to point to the persistent volumes
   yamlDocuments.forEach((doc, index) => {
     const jsDoc = doc.toJS();
     if (jsDoc.kind === "Deployment" && jsDoc.metadata.name === "pgsql") {
-
       jsDoc.spec.template.spec.volumes[0] = {"name": "postgresql-data", "persistentVolumeClaim": {"claimName": "pgsql-pvc"}};
       yamlDocuments[index] = new YAML.Document(jsDoc);
     }
@@ -112,6 +103,7 @@ function main() {
     processedConfig.initCert = Buffer.from(pemCert).toString('base64').replace(/\n/g, "");
     processedConfig.initKey = Buffer.from(pemPrivateKey).toString('base64').replace(/\n/g, "");
 
+    // generate the hcce.yaml file
     const template = utils.readTemplate("/generate_script", "hcce.yam");
     var replacedContent = utils.replacePlaceholders(template, processedConfig);
 
@@ -120,6 +112,7 @@ function main() {
     }
 
     utils.writeOutputFile(replacedContent, "", "hcce.yaml");
+
   } catch (error) {
     console.error("Error in main function:", error);
   }
