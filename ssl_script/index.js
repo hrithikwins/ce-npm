@@ -9,6 +9,7 @@ function generate_ssl(config, template, url) {
     console.log("certbotbot-http pod not present.  This is fine");
   }
   // Generate the cbb.yaml file for this domain/subdomain and apply it
+  config.HUB_DOMAIN = url;
   const replacedContent = utils.replacePlaceholders(template, config);
   utils.writeOutputFile(replacedContent, "ssl_script", "cbb.yaml");
   try {execSync(`kubectl apply -f cbb.yaml`, {cwd: "ssl_script"})} catch {
@@ -49,10 +50,11 @@ function main() {
     console.log("starting script");
     const config = utils.readConfig();
     const template = utils.readTemplate("ssl_script", "cbb.yam");
-    generate_ssl(config, template, config.HUB_DOMAIN);
-    generate_ssl(config, template, `assets.${config.HUB_DOMAIN}`);
-    generate_ssl(config, template, `stream.${config.HUB_DOMAIN}`);
-    generate_ssl(config, template, `cors.${config.HUB_DOMAIN}`);
+    const rootHubDomain = config.HUB_DOMAIN;
+    generate_ssl(config, template, rootHubDomain);
+    generate_ssl(config, template, `assets.${rootHubDomain}`);
+    generate_ssl(config, template, `stream.${rootHubDomain}`);
+    generate_ssl(config, template, `cors.${rootHubDomain}`);
   } catch (error) {
     console.error("Error in main function:", error);
   }
