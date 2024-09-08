@@ -34,10 +34,11 @@ For generating hcce.yaml file based on your values provided in input-values.yaml
  ```
 
 For provisioning the SSL certificates run
-Note: you need to have kubectl installed for this step
+Note: you need to have kubectl installed for this step.  
 ```sh
 npm run gen-ssl
 ```
+If it fails with an error like `namespaces "hcce" not found`, it's probably because the namespace hasn't finished generating from your initial application of the hcce.yaml file, so try running it again in a few seconds.
 
 
 
